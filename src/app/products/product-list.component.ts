@@ -1,19 +1,24 @@
-import {Component, EventEmitter, OnInit} from "@angular/core";
+import {Component, EventEmitter, OnDestroy, OnInit} from "@angular/core";
 
 import {IProduct} from './product';
 import {ProductService} from "./product.service";
+import {Subscription} from "rxjs";
 
 @Component({
-  selector: 'pm-products',
+  // selector: 'pm-products',
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css'],
   // providers:[ProductService] // if we want the service to be available only for this component and it's children
 })
-export class ProductListComponent implements OnInit {
+export class ProductListComponent implements OnInit, OnDestroy {
   pageTitle: string = "Product List";
   imageWidth: number = 50;
   imageMargin: number = 2;//no need to specify type if you assign it
   showImage: boolean = false;
+  errorMessage: string = '';
+  // sub: Subscription | undefined;
+  sub!: Subscription;// the ! tells TypeScript that we will handle assignment ourselves
+
   private _listFilter: string = '';
 
   /* private _productService;
@@ -50,11 +55,21 @@ export class ProductListComponent implements OnInit {
   //lifecycle method, angular starts with ng
   ngOnInit(): void {
     this.listFilter = '';
-    this.products = this.productService.getProducts();
-    this.filteredProducts = this.products;
+    // for http requests there is no need for complete since they unsubscribe automatically
+    this.sub = this.productService.getProducts().subscribe({
+      next: products => {
+        this.products = products;
+        this.filteredProducts = this.products;
+      },
+      error: err => this.errorMessage = err
+    });
   }
 
   onRatingClicked(message: string): void {
     this.pageTitle = 'Product List: ' + message;
+  }
+
+  ngOnDestroy(): void {
+    this.sub.unsubscribe();
   }
 }
